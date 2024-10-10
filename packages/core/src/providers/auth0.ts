@@ -1,127 +1,149 @@
-/**
- * <div style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
- * <span style={{fontSize: "1.35rem" }}>
- *  Built-in sign in with <b>Auth0</b> integration.
- * </span>
- * <a href="https://auth0.com" style={{backgroundColor: "black", padding: "12px", borderRadius: "100%" }}>
- *   <img style={{display: "block"}} src="https://authjs.dev/img/providers/auth0.svg" width="24"/>
- * </a>
- * </div>
- *
- * @module providers/auth0
- */
-import type { OIDCConfig, OIDCUserConfig } from "./index.js"
+import NextAuth from "next-auth"
+import "next-auth/jwt"
 
-/** The returned user profile from Auth0 when using the profile callback. [Reference](https://auth0.com/docs/manage-users/user-accounts/user-profiles/user-profile-structure). */
-export interface Auth0Profile extends Record<string, any> {
-  /** The user's unique identifier. */
-  sub: string
-  /** Custom fields that store info about a user that influences the user's access, such as support plan, security roles (if not using the Authorization Core feature set), or access control groups. To learn more, read Metadata Overview. */
-  app_metadata: object
-  /** Indicates whether the user has been blocked. Importing enables subscribers to ensure that users remain blocked when migrating to Auth0. */
-  blocked: boolean
-  /** Timestamp indicating when the user profile was first created. */
-  created_at: Date
-  /** (unique) The user's email address. */
-  email: string
-  /** Indicates whether the user has verified their email address. */
-  email_verified: boolean
-  /** The user's family name. */
-  family_name: string
-  /** The user's given name. */
-  given_name: string
-  /** Custom fields that store info about a user that does not impact what they can or cannot access, such as work address, home address, or user preferences. To learn more, read Metadata Overview. */
-  user_metadata: object
-  /** (unique) The user's username. */
-  username: string
-  /** Contains info retrieved from the identity provider with which the user originally authenticates. Users may also link their profile to multiple identity providers; those identities will then also appear in this array. The contents of an individual identity provider object varies by provider. In some cases, it will also include an API Access Token to be used with the provider. */
-  identities: Array<{
-    /** Name of the Auth0 connection used to authenticate the user. */
-    connection: string
-    /** Indicates whether the connection is a social one. */
-    isSocial: boolean
-    /** Name of the entity that is authenticating the user, such as Facebook, Google, SAML, or your own provider. */
-    provider: string
-    /** User's unique identifier for this connection/provider. */
-    user_id: string
-    /** User info associated with the connection. When profiles are linked, it is populated with the associated user info for secondary accounts. */
-    profileData: object
-    [key: string]: any
-  }>
-  /** IP address associated with the user's last login. */
-  last_ip: string
-  /** Timestamp indicating when the user last logged in. If a user is blocked and logs in, the blocked session updates last_login. If you are using this property from inside a Rule using the user< object, its value will be associated with the login that triggered the rule; this is because rules execute after login. */
-  last_login: Date
-  /** Timestamp indicating the last time the user's password was reset/changed. At user creation, this field does not exist. This property is only available for Database connections. */
-  last_password_reset: Date
-  /** Number of times the user has logged in. If a user is blocked and logs in, the blocked session is counted in logins_count. */
-  logins_count: number
-  /** List of multi-factor providers with which the user is enrolled. */
-  multifactor: string
-  /** The user's full name. */
-  name: string
-  /** The user's nickname. */
-  nickname: string
-  /** The user's phone number. Only valid for users with SMS connections. */
-  phone_number: string
-  /** Indicates whether the user has been verified their phone number. Only valid for users with SMS connections. */
-  phone_verified: boolean
-  /** URL pointing to the user's profile picture. */
-  picture: string
-  /** Timestamp indicating when the user's profile was last updated/modified. Changes to last_login are considered updates, so most of the time, updated_at will match last_login. */
-  updated_at: Date
-  /** (unique) The user's identifier. Importing allows user records to be synchronized across multiple systems without using mapping tables. */
-  user_id: string
+import Apple from "next-auth/providers/apple"
+// import Atlassian from "next-auth/providers/atlassian"
+import Auth0 from "next-auth/providers/auth0"
+import AzureB2C from "next-auth/providers/azure-ad-b2c"
+import BankIDNorway from "next-auth/providers/bankid-no"
+import BoxyHQSAML from "next-auth/providers/boxyhq-saml"
+import Cognito from "next-auth/providers/cognito"
+import Coinbase from "next-auth/providers/coinbase"
+import Discord from "next-auth/providers/discord"
+import Dropbox from "next-auth/providers/dropbox"
+import Facebook from "next-auth/providers/facebook"
+import GitHub from "next-auth/providers/github"
+import GitLab from "next-auth/providers/gitlab"
+import Google from "next-auth/providers/google"
+import Hubspot from "next-auth/providers/hubspot"
+import Keycloak from "next-auth/providers/keycloak"
+import LinkedIn from "next-auth/providers/linkedin"
+import MicrosoftEntraId from "next-auth/providers/microsoft-entra-id"
+import Netlify from "next-auth/providers/netlify"
+import Okta from "next-auth/providers/okta"
+import Passage from "next-auth/providers/passage"
+import Passkey from "next-auth/providers/passkey"
+import Pinterest from "next-auth/providers/pinterest"
+import Reddit from "next-auth/providers/reddit"
+import Slack from "next-auth/providers/slack"
+import Salesforce from "next-auth/providers/salesforce"
+import Spotify from "next-auth/providers/spotify"
+import Twitch from "next-auth/providers/twitch"
+import Twitter from "next-auth/providers/twitter"
+import Vipps from "next-auth/providers/vipps"
+import WorkOS from "next-auth/providers/workos"
+import Zoom from "next-auth/providers/zoom"
+import { createStorage } from "unstorage"
+import memoryDriver from "unstorage/drivers/memory"
+import vercelKVDriver from "unstorage/drivers/vercel-kv"
+import { UnstorageAdapter } from "@auth/unstorage-adapter"
+import type { NextAuthConfig } from "next-auth"
+
+const storage = createStorage({
+  driver: process.env.VERCEL
+    ? vercelKVDriver({
+        url: process.env.AUTH_KV_REST_API_URL,
+        token: process.env.AUTH_KV_REST_API_TOKEN,
+        env: false,
+      })
+    : memoryDriver(),
+})
+
+const config = {
+  theme: { logo: "https://authjs.dev/img/logo-sm.png" },
+  adapter: UnstorageAdapter(storage),
+  providers: [
+    Apple,
+    // Atlassian,
+    Auth0,
+    AzureB2C({
+      clientId: process.env.AUTH_AZURE_AD_B2C_ID,
+      clientSecret: process.env.AUTH_AZURE_AD_B2C_SECRET,
+      issuer: process.env.AUTH_AZURE_AD_B2C_ISSUER,
+    }),
+    BankIDNorway,
+    BoxyHQSAML({
+      clientId: "dummy",
+      clientSecret: "dummy",
+      issuer: process.env.AUTH_BOXYHQ_SAML_ISSUER,
+    }),
+    Cognito,
+    Coinbase,
+    Discord,
+    Dropbox,
+    Facebook,
+    GitHub,
+    GitLab,
+    Google,
+    Hubspot,
+    Keycloak({ name: "Keycloak (bob/bob)" }),
+    LinkedIn,
+    MicrosoftEntraId,
+    Netlify,
+    Okta,
+    Passkey({
+      formFields: {
+        email: {
+          label: "Username",
+          required: true,
+          autocomplete: "username webauthn",
+        },
+      },
+    }),
+    Passage,
+    Pinterest,
+    Reddit,
+    Salesforce,
+    Slack,
+    Spotify,
+    Twitch,
+    Twitter,
+    Vipps({
+      issuer: "https://apitest.vipps.no/access-management-1.0/access/",
+    }),
+    WorkOS({
+      connection: process.env.AUTH_WORKOS_CONNECTION!,
+    }),
+    Zoom,
+  ],
+  basePath: "/auth",
+  session: { strategy: "jwt" },
+  callbacks: {
+    authorized({ request, auth }) {
+      const { pathname } = request.nextUrl
+      if (pathname === "/middleware-example") return !!auth
+      return true
+    },
+    jwt({ token, trigger, session, account }) {
+      if (trigger === "update") token.name = session.user.name
+      if (account?.provider === "keycloak") {
+        return { ...token, accessToken: account.access_token }
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (token?.accessToken) {
+        session.accessToken = token.accessToken
+      }
+      return session
+    },
+  },
+  experimental: {
+    enableWebAuthn: true,
+  },
+  debug: process.env.NODE_ENV !== "production" ? true : false,
+} satisfies NextAuthConfig
+
+export const { handlers, auth, signIn, signOut } = NextAuth(config)
+
+declare module "next-auth" {
+  interface Session {
+    accessToken?: string
+  }
 }
 
-/**
- * ### Setup
- *
- * #### Callback URL
- * ```
- * https://example.com/api/auth/callback/auth0
- * ```
- *
- * #### Configuration
- * ```ts
- * import { Auth } from "@auth/core"
- * import Auth0 from "@auth/core/providers/auth0"
- *
- * const request = new Request(origin)
- * const response = await Auth(request, {
- *   providers: [
- *     Auth0({
- *       clientId: AUTH0_ID,
- *       clientSecret: AUTH0_SECRET,
- *     }),
- *   ],
- * })
- * ```
- *
- * ### Resources
- *
- * - [Auth0 docs](https://auth0.com/docs/authenticate)
- *
- * ### Notes
- *
- * The Auth0 provider comes with a [default configuration](https://github.com/nextauthjs/next-auth/blob/main/packages/core/src/providers/auth0.ts). To override the defaults for your use case, check out [customizing a built-in OAuth provider](https://authjs.dev/guides/configuring-oauth-providers).
- *
- * ## Help
- *
- * If you think you found a bug in the default configuration, you can [open an issue](https://authjs.dev/new/provider-issue).
- *
- * Auth.js strictly adheres to the specification and it cannot take responsibility for any deviation from
- * the spec by the provider. You can open an issue, but if the problem is non-compliance with the spec,
- * we might not pursue a resolution. You can ask for more help in [Discussions](https://authjs.dev/new/github-discussions).
- */
-export default function Auth0(
-  config: OIDCUserConfig<Auth0Profile>
-): OIDCConfig<Auth0Profile> {
-  return {
-    id: "auth0",
-    name: "Auth0",
-    type: "oidc",
-    style: { text: "#fff", bg: "#EB5424" },
-    options: config,
+declare module "next-auth/jwt" {
+  interface JWT {
+    accessToken?: string
   }
 }
